@@ -11,7 +11,7 @@ These instructions will help you set up and run the application on your local ma
 ### Setup
 
 1. Clone this repository to your local machine:
-    git clone https://github.com/yourusername/your-repository.git
+    git clone https://github.com/sagarmk/vector_search_index.git
 
 2. Navigate to the project directory:
     cd your-repository
