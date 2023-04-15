@@ -7,4 +7,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["streamlit", "run", "main.py"]
+CMD ["streamlit", "run", "/src/main.py"]
