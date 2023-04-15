@@ -8,13 +8,6 @@ This application allows you to upload PDF files, parse their content, build a FA
 
 These instructions will help you set up and run the application on your local machine.
 
-### Prerequisites
-
-You'll need to have the following tools installed on your system:
-
-- [Docker](https://www.docker.com/get-started)
-- [Docker Compose](https://docs.docker.com/compose/install/)
-
 ### Setup
 
 1. Clone this repository to your local machine:
