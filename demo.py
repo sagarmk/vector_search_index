@@ -3,7 +3,7 @@ import json
 import PyPDF2
 import streamlit as st
 from pathlib import Path
-
+import faiss
 from src.parse_document import PdfParser
 from src.indexer import FaissIndexer
 
@@ -25,6 +25,7 @@ uploaded_files = st.file_uploader("Choose one or more PDF files", type="pdf", ac
 if st.button("Parse"):
     if uploaded_files:
         for uploaded_file in uploaded_files:
+            
             # Create a PdfParser object for each uploaded file
             pdf_parser = PdfParser(uploaded_file)
 
@@ -51,17 +52,28 @@ if st.button("Build Index"):
     indexer = FaissIndexer(json_files)
     indexer.build_index()
 
-    # Display a success message
-    st.success("Faiss index has been built.")
+    if indexer:
+        indexer.save_index('./tmp.index')
+        st.markdown("**:blue[ Faiss index has been built and stored at: tmp.index]**")
+
+
 
 # Create a search query input box and search button
 query = st.text_input("Enter a search query:")
 if st.button("Search"):
     # Search the index using the query
-    D, I = indexer.search_index(query)
+    indexer = FaissIndexer.load_index('./tmp.index')  # Load the index and assign it to the indexer variable
 
-    # Display the search results
-    for i, index in enumerate(I[0]):
-        st.write(f"Result {i+1}: {json_files[index]}")
-        # Display additional details about the search result if needed
-        # ...
+    if indexer:  # Check if index was successfully loaded
+        st.markdown('**:blue[Loaded index from: tmp.index]**')
+        D, I, search_results = indexer.search_index(query)  # Get distances, indices, and search results
+
+        # Display the search results
+        for i, result in enumerate(search_results):
+            st.write(f"Result {i+1}: {result}")
+            if i < len(search_results) - 1:  # Add a horizontal line if it's not the last result
+                   
+                    st.markdown("---")
+            # Display additional details about the search result if needed
+    else:
+        st.error("Failed to load index. Please make sure the index has been built.")

@@ -11,13 +11,14 @@ class FaissIndexer:
     A class to create, search and save/load a FAISS index for text search using Sentence Transformers.
     """
 
-    def __init__(self, uploaded_files):
+    def __init__(self, uploaded_files=None):
         """
         Initialize FaissIndexer class with a list of uploaded files.
 
         :param uploaded_files: List of file objects to be indexed
         """
-        self.uploaded_files = uploaded_files
+        if uploaded_files:
+            self.uploaded_files = uploaded_files
         self.model = SentenceTransformer('sentence-transformers/paraphrase-distilroberta-base-v1')
         self.index = None
         self.paragraphs = []  # Change this line to store paragraphs instead of documents
@@ -27,7 +28,7 @@ class FaissIndexer:
         Builds the FAISS index using the uploaded files.
         """
         for uploaded_file in self.uploaded_files:
-            input_filename = Path(uploaded_file.name)
+            input_filename = Path(uploaded_file)
             output_filename = input_filename.stem + ".json"
             with open(output_filename, 'r') as infile:
                 data = json.load(infile)
@@ -51,7 +52,8 @@ class FaissIndexer:
         query_embedding = self.model.encode([query_text])[0]
         D, I = self.index.search(np.array([query_embedding]).astype('float32'), k)
         search_results = [self.paragraphs[i] for i in I[0]]  # Retrieve paragraph texts based on indices
-        return D, search_results
+        return D, I, search_results
+
 
     def save_index(self, index_name):
         """
@@ -70,13 +72,17 @@ class FaissIndexer:
         Loads a FAISS index and the associated paragraphs from files.
 
         :param index_name: The name of the index to be loaded
-        :return: An instance of FaissIndexer class with the loaded index
+        :return: An instance of FaissIndexer class with the loaded index, or None if an error occurs
         """
-        index_filename = f"{index_name}.index"
-        index = faiss.read_index(index_filename)
-        with open(f"{index_name}_paragraphs.json", 'r') as infile:
-            paragraphs = json.load(infile)
-        indexer = cls(None)
-        indexer.index = index
-        indexer.paragraphs = paragraphs
-        return indexer
+        try:
+            index_filename = f"{index_name}.index"
+            index = faiss.read_index(index_filename)
+            with open(f"{index_name}_paragraphs.json", 'r') as infile:
+                paragraphs = json.load(infile)
+            indexer = cls(None)
+            indexer.index = index
+            indexer.paragraphs = paragraphs
+            return indexer  # Return the instance of FaissIndexer with the loaded index
+        except Exception as e:
+            return None  # Return None if there was an error loading the index
+
