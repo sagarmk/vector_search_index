@@ -1,7 +1,7 @@
 import streamlit as st
 from pathlib import Path
-from parse_document import PdfParser
-from indexer import FaissIndexer
+from src.parse_document import PdfParser
+from src.indexer import FaissIndexer
 import os
 
 st.title("Vector Document Search")
