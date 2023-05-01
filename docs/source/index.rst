@@ -1,10 +1,10 @@
-.. GPT vector search documentation master file, created by
-   sphinx-quickstart on Sun Apr 30 20:27:24 2023.
+.. vector search index documentation master file, created by
+   sphinx-quickstart on Sun Apr 30 20:51:11 2023.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to GPT vector search's documentation!
-=============================================
+Welcome to vector search index's documentation!
+===============================================
 
 .. toctree::
    :maxdepth: 2

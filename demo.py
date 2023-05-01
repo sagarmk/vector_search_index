@@ -7,6 +7,11 @@ from pathlib import Path
 from src.parse_document import PdfParser
 from src.indexer import FaissIndexer
 
+
+"""
+This is a streamlit based application which works as a frontend for building vector search index
+"""
+
 # Create a Streamlit app
 st.title("PDF Parser and Search")
 st.write("Upload one or more PDF files and click the button to parse them and dump the extracted data as JSON. "
