@@ -26,3 +26,8 @@ style:
 	isort . 
 	black . 
 	autoflake --remove-all-unused-imports --remove-unused-variables --in-place --recursive . 
+
+.PHONY: clean
+clean:
+	find . -name "__pycache__" -type d -exec rm -rf {} +
+	find . -name ".DS_Store" -type f -delete

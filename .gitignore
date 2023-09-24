@@ -1,2 +1,4 @@
 make.bat
 .venv
+*.py[cod] 
+.DS_Store
