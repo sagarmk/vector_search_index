@@ -1,79 +1,103 @@
-import re
 import json
-import PyPDF2
-import streamlit as st
-from pathlib import Path
-import faiss
-from src.parse_document import PdfParser
-from src.indexer import FaissIndexer
+import logging
+import os
+from parser.document_parser import PdfParser
+from parser.indexer import TextIndexer
 
+import faiss
+import streamlit as st
+from dotenv import load_dotenv
+
+load_dotenv()
+
+from parser.utils import configure_logger
+
+log = configure_logger(__name__)
 
 """
 This is a streamlit based application which works as a frontend for building vector search index
 """
 
-# Create a Streamlit app
-st.title("PDF Parser and Search")
-st.write("Upload one or more PDF files and click the button to parse them and dump the extracted data as JSON. "
-         "Then, click the 'Build Index' button to create a Faiss index from the generated JSON files. "
-         "Finally, enter a search query and click the 'Search' button to perform a search on the Faiss index.")
 
-# Create a file uploader for multiple files
-uploaded_files = st.file_uploader("Choose one or more PDF files", type="pdf", accept_multiple_files=True)
+def read_json(file_path):
+    with open(file_path, "r") as f:
+        data = json.load(f)
+    return data
 
-# Create a button to start parsing
+
+st.title("Single PDF Parser and Search")
+st.write(
+    "Upload one or more PDF files and click the button to parse them and dump the extracted data as JSON. "
+    "Then, click the 'Build Index' button to create a Faiss index from the generated JSON files. "
+    "Finally, enter a search query and click the 'Search' button to perform a search on the Faiss index."
+)
+
+uploaded_files = st.file_uploader(
+    "Choose one or more PDF files", type="pdf", accept_multiple_files=True
+)
+
+index_name = os.getenv("INDEX_NAME")
+
+
 if st.button("Parse"):
+
     if uploaded_files:
-        for uploaded_file in uploaded_files:
-            
-            # Create a PdfParser object for each uploaded file
-            pdf_parser = PdfParser(uploaded_file)
+        pdf_parser = PdfParser(uploaded_files)
+        pdf_parser.parse_pdf()
 
-            # Parse the PDF file
-            pdf_parser.parse_pdf()
-
-            # Write the extracted data to a JSON file with the same name as the PDF file
-            input_filename = Path(uploaded_file.name)
-            output_filename = input_filename.stem + ".json"
+        output_filename = st.text_input("Output filename", value="output.json")
+        if output_filename:
             pdf_parser.write_json(output_filename)
+            st.success(f"Content written to {output_filename}")
 
-            # Display a success message
-            st.success(f"Extracted data from {input_filename} has been written to {output_filename}.")
-    else:
-        # Display an error message if no file was uploaded
-        st.error("Please upload one or more PDF files.")
+        if st.button("Show parsed content"):
+            st.write(
+                {
+                    "documents": pdf_parser.document_content,
+                    "pages": pdf_parser.page_content,
+                }
+            )
 
-# Create a button to build the Faiss index
 if st.button("Build Index"):
-    # Define the list of JSON files to index
-    json_files = [str(Path(file.name).stem) + '.json' for file in uploaded_files]
 
-    # Create a Faiss indexer object and build the index
-    indexer = FaissIndexer(json_files)
+    json_dir = os.getenv("JSON")
+    json_files = [f for f in os.listdir(json_dir) if f.endswith(".json")]
+    all_data = [
+        read_json(os.path.join(json_dir, json_file)) for json_file in json_files
+    ]
+
+    all_texts = [doc["text"] for data in all_data for doc in data["documents"]]
+    indexer = TextIndexer(all_texts)
     indexer.build_index()
 
     if indexer:
-        indexer.save_index('./tmp.index')
+        indexer.save_index(index_name)
         st.markdown("**:blue[ Faiss index has been built and stored at: tmp.index]**")
 
+if st.sidebar.button("View Index"):
+    files_indexer = faiss.read_index(index_name)
+    n_vectors = files_indexer.ntotal
+    dimensionality = files_indexer.d
+    st.sidebar.write(f"Total Vectors: {n_vectors}, Dimensionality: {dimensionality}")
 
 
-# Create a search query input box and search button
-query = st.text_input("Enter a search query:")
-if st.button("Search"):
-    # Search the index using the query
-    indexer = FaissIndexer.load_index('./tmp.index')  # Load the index and assign it to the indexer variable
+single_index = [f for f in os.listdir(".") if f.endswith(".index")]
+selected_index_file = st.selectbox("Select a FAISS Index:", single_index)
 
-    if indexer:  # Check if index was successfully loaded
-        st.markdown('**:blue[Loaded index from: tmp.index]**')
-        D, I, search_results = indexer.search_index(query)  # Get distances, indices, and search results
 
-        # Display the search results
-        for i, result in enumerate(search_results):
+if selected_index_file:
+    single_index = os.path.join(".", selected_index_file)
+    load_faiss_index = TextIndexer()
+    st.sidebar.write(selected_index_file)
+    st.write(f"Sucessfully loaded index: **{os.path.basename(single_index)}**")
+    load_faiss_index.load_index(single_index)
+
+    query = st.text_input("Enter your query:")
+    if st.button("Search"):
+        res = load_faiss_index.search(query)
+        logging.info(f" RESUULTS: {res}")
+
+        for i, result in enumerate(res):
             st.write(f"Result {i+1}: {result}")
-            if i < len(search_results) - 1:  # Add a horizontal line if it's not the last result
-                   
-                    st.markdown("---")
-            # Display additional details about the search result if needed
-    else:
-        st.error("Failed to load index. Please make sure the index has been built.")
+            if i < len(res) - 1:
+                st.markdown("---")

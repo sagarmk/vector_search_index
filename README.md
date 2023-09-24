@@ -17,16 +17,14 @@ These instructions will help you set up and run the application on your local ma
     cd your-repository
 
 3. Build the Docker image:
-    make build
+    make install
 
 4. Start the application:
-    make up
+    make run
 
 5. Open your web browser and access the application at:'
     http://localhost:8501
 
-6. To stop the application and remove the container, run:
-    make down
 
 
 ## Usage
